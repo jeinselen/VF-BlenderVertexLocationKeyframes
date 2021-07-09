@@ -1,7 +1,7 @@
 bl_info = {
 	"name": "VF Mesh Positions",
 	"author": "John Einselen - Vectorform LLC",
-	"version": (0, 1),
+	"version": (0, 4),
 	"blender": (2, 80, 0),
 	"location": "Scene > Vertex Tools > Subpanel",
 	"description": "Sets a series of object position keyframes based on the vertices of a target mesh",
@@ -24,21 +24,13 @@ bl_info = {
 # https://blender.stackexchange.com/questions/155363/add-on-dev-button-that-simply-calls-a-function
 # https://blender.stackexchange.com/questions/133962/how-to-use-keyframes-and-the-python-api-programmatically
 # https://www.geeksforgeeks.org/range-to-a-list-in-python/
-# 
-
-# And ended up not using these:
-# https://blenderartists.org/t/loop-over-collections-in-the-outliner/1172818/2
-# https://b3d.interplanety.org/en/calling-functions-by-pressing-buttons-in-blender-custom-ui/
-# 
-# 
-# 
 
 import bpy
 from bpy.app.handlers import persistent
 import random
 
 ###########################################################################
-# Main function
+# Main class
 
 class VF_Mesh_Position_Offset(bpy.types.Operator):
 	bl_idname = "vfmeshposition.offset"
@@ -53,66 +45,58 @@ class VF_Mesh_Position_Offset(bpy.types.Operator):
 
 		source = bpy.context.view_layer.objects.active.data.vertices
 		objWorld = bpy.context.view_layer.objects.active.matrix_world
-		# targets = bpy.context.view_layer.objects.selected
-		# The active item may or may not be included in the selected items group
-		# This create a new list that filters
+		# The active item may or may not be in the selected items group, so we have to make sure we don't include it in our targets
 		targets = []
 		for i in range(len(bpy.context.view_layer.objects.selected)):
 			if bpy.context.view_layer.objects.selected[i].name != bpy.context.view_layer.objects.active.name:
 				targets.append(bpy.context.view_layer.objects.selected[i])
 
-		# print ("    Targets List:")
-		# for i in range(len(targets)):
-		# 	print (targets[i].name)
-
 		length = min(len(source), len(targets))
 
-		# Randomise the order of the objects if enabled
-		order = [*range(length)]
-		if bpy.context.scene.vf_mesh_positions_settings.enable_shuffle:
-			random.shuffle(order)
+		# Randomise the order of the object attachments
+		attach = [*range(length)]
+		if bpy.context.scene.vf_mesh_positions_settings.shuffle_attachment:
+			random.shuffle(attach)
+
+		# Randomise the order of the object timing offsets
+		timing = [*range(length)]
+		if bpy.context.scene.vf_mesh_positions_settings.shuffle_timing:
+			random.shuffle(timing)
 
 		# Loop through all of the vertices or objects (whichever is shorter)
 		for i in range(length):
-			# Only apply positional changes to the non-active objects
-			if bpy.context.view_layer.objects.active.name != targets[i].name:
-				newFrame = startFrame + (i * bpy.context.scene.vf_mesh_positions_settings.keyframe_offset)
-				co_transformed = objWorld @ source[i].co
-				targets[order[i]].location = co_transformed
-				targets[order[i]].keyframe_insert(data_path="location", frame=newFrame)
-
-				# print ("loop: " + str(i))
-				# print ("newFrame: " + str(newFrame))
-				# print ("vert: " + str(source[i].co))
-				# print ("vert: " + str(co_transformed))
-				# print ("item: " + targets[order[i]].name)
-				# print ("position: " + str(targets[order[i]].location))
+			offsetFrame = startFrame + (timing[i] * bpy.context.scene.vf_mesh_positions_settings.keyframe_offset)
+			co_transformed = objWorld @ source[i].co
+			targets[attach[i]].location = co_transformed
+			targets[attach[i]].keyframe_insert(data_path="location", frame=offsetFrame)
 
 		return {'FINISHED'}
 
 ###########################################################################
 # Project settings and UI rendering classes
 
-class MeshPositionsSettings(bpy.types.PropertyGroup):
+class VFMeshPositionsSettings(bpy.types.PropertyGroup):
 	enable_shuffle: bpy.props.BoolProperty(
 		name="Shuffle",
 		description="Enable/disable randomisation of the order vertex positions are applied to the target objects (if disabled, Blender's default alpha-numeric sorting is used)",
 		default=False)
+	shuffle_attachment: bpy.props.BoolProperty(
+		name="Shuffle Attachment",
+		description="Enable/disable randomisation of the order vertex positions are applied to the target objects (if disabled, items and vertices are sorted by creation order)",
+		default=False)
+	shuffle_timing: bpy.props.BoolProperty(
+		name="Shuffle Timing",
+		description="Enable/disable randomisation of which items move first (this maintains the attachment order of vertices and objects, but randomises the order of the time offsets)",
+		default=False)
 	keyframe_offset: bpy.props.IntProperty(
-		name="Offset",
-		description="Number of frames each keyframe will be offset by",
-		default=0)
-
-def VFTOOLS_append_panel(self,context):
-	try:
-		layout = self.layout
-	except Exception as exc:
-		print(str(exc) + " | Error in View3D Ht Tool Header when adding to panel")
+		name="Frame Offset",
+		description="Number of frames each sequential keyframe will be offset by",
+		default=1)
 
 class VFTOOLS_PT_mesh_positions(bpy.types.Panel):
 	bl_space_type = "VIEW_3D"
 	bl_region_type = "UI"
-	bl_category = 'VFtools'
+	bl_category = 'VF Tools'
 	bl_order = 0
 	bl_label = "Mesh Positions"
 	bl_idname = "VFTOOLS_PT_mesh_positions"
@@ -130,21 +114,24 @@ class VFTOOLS_PT_mesh_positions(bpy.types.Panel):
 	def draw(self, context):
 		try:
 			layout = self.layout
+			layout.use_property_decorate = False  # No animation
+			row = layout.row()
+			# row.prop(context.scene.vf_mesh_positions_settings, 'enable_shuffle')
+			# row.prop(context.scene.vf_mesh_positions_settings, 'keyframe_offset')
+			row.prop(context.scene.vf_mesh_positions_settings, 'shuffle_attachment')
+			row.prop(context.scene.vf_mesh_positions_settings, 'shuffle_timing')
+			layout.prop(context.scene.vf_mesh_positions_settings, 'keyframe_offset')
+			layout.operator(VF_Mesh_Position_Offset.bl_idname)
 			box = layout.box()
 			if bpy.context.view_layer.objects.active.type == "MESH":
 				box.label(text="Source: " + bpy.context.view_layer.objects.active.name + ", " + str(len(bpy.context.view_layer.objects.active.data.vertices)) + " points")
 				box.label(text="Selected: " + str(len(bpy.context.view_layer.objects.selected)) + " items")
 			else:
 				box.label(text="Error: active object must be a mesh")
-			layout.use_property_decorate = False  # No animation
-			row = layout.row()
-			row.prop(context.scene.vf_mesh_positions_settings, 'enable_shuffle')
-			row.prop(context.scene.vf_mesh_positions_settings, 'keyframe_offset')
-			layout.operator(VF_Mesh_Position_Offset.bl_idname)
 		except Exception as exc:
 			print(str(exc) + " | Error in VF Mesh Positions panel")
 
-classes = (VF_Mesh_Position_Offset, MeshPositionsSettings, VFTOOLS_PT_mesh_positions)
+classes = (VF_Mesh_Position_Offset, VFMeshPositionsSettings, VFTOOLS_PT_mesh_positions)
 
 ###########################################################################
 # Addon registration functions
@@ -152,7 +139,7 @@ classes = (VF_Mesh_Position_Offset, MeshPositionsSettings, VFTOOLS_PT_mesh_posit
 def register():
 	for cls in classes:
 		bpy.utils.register_class(cls)
-	bpy.types.Scene.vf_mesh_positions_settings = bpy.props.PointerProperty(type=MeshPositionsSettings)
+	bpy.types.Scene.vf_mesh_positions_settings = bpy.props.PointerProperty(type=VFMeshPositionsSettings)
 
 def unregister():
 	for cls in reversed(classes):
