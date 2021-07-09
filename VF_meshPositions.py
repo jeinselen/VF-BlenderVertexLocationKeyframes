@@ -17,8 +17,7 @@ bl_info = {
 	# Frame offset (sequences the keyframes by a set amount)
 	# Create keyframes!
 
-# Known issues:
-	# If the source object sorts anywhere but the end of the selected objects list, we're in trouble
+# Add random offset ordering, as opposed to just random assignment
 
 # Based on the following resources:
 # https://blender.stackexchange.com/questions/1311/how-can-i-get-vertex-positions-from-a-mesh
@@ -55,45 +54,32 @@ class VF_Mesh_Position_Offset(bpy.types.Operator):
 		source = bpy.context.view_layer.objects.active.data.vertices
 		objWorld = bpy.context.view_layer.objects.active.matrix_world
 		# targets = bpy.context.view_layer.objects.selected
+		# The active item may or may not be included in the selected items group
+		# This create a new list that filters
 		targets = []
 		for i in range(len(bpy.context.view_layer.objects.selected)):
-			if targets[i].name != bpy.context.view_layer.objects.active.name:
-				targets.append(targets[i])
+			if bpy.context.view_layer.objects.selected[i].name != bpy.context.view_layer.objects.active.name:
+				targets.append(bpy.context.view_layer.objects.selected[i])
 
+		# print ("    Targets List:")
+		# for i in range(len(targets)):
+		# 	print (targets[i].name)
 
-		print ("    Raw List:")
-		for i in range(len(targets)):
-			print (targets[i].name)
-
-		# Remove the active item from the selected items, if it exists in the list
-		removeIndex = -1
-		for i in range(len(targets)):
-			if targets[i].name == bpy.context.view_layer.objects.active.name:
-				removeIndex = i
-		if removeIndex >= 0:
-			del targets[removeIndex]
-
-		print ("    Edited List:")
-		for i in range(len(targets)):
-			print (targets[i].name)
-
-
-
-		length = min(len(source), len(targets) - 1)
+		length = min(len(source), len(targets))
 
 		# Randomise the order of the objects if enabled
 		order = [*range(length)]
 		if bpy.context.scene.vf_mesh_positions_settings.enable_shuffle:
 			random.shuffle(order)
 
-		# # Loop through all of the vertices or objects (whichever is shorter)
-		# for i in range(length):
-		# 	# Only apply positional changes to the non-active objects
-		# 	if bpy.context.view_layer.objects.active.name != targets[i].name:
-		# 		newFrame = startFrame + (i * bpy.context.scene.vf_mesh_positions_settings.keyframe_offset)
-		# 		co_transformed = objWorld @ source[i].co
-		# 		targets[order[i]].location = co_transformed
-		# 		targets[order[i]].keyframe_insert(data_path="location", frame=newFrame)
+		# Loop through all of the vertices or objects (whichever is shorter)
+		for i in range(length):
+			# Only apply positional changes to the non-active objects
+			if bpy.context.view_layer.objects.active.name != targets[i].name:
+				newFrame = startFrame + (i * bpy.context.scene.vf_mesh_positions_settings.keyframe_offset)
+				co_transformed = objWorld @ source[i].co
+				targets[order[i]].location = co_transformed
+				targets[order[i]].keyframe_insert(data_path="location", frame=newFrame)
 
 				# print ("loop: " + str(i))
 				# print ("newFrame: " + str(newFrame))
@@ -147,7 +133,7 @@ class VFTOOLS_PT_mesh_positions(bpy.types.Panel):
 			box = layout.box()
 			if bpy.context.view_layer.objects.active.type == "MESH":
 				box.label(text="Source: " + bpy.context.view_layer.objects.active.name + ", " + str(len(bpy.context.view_layer.objects.active.data.vertices)) + " points")
-				box.label(text="Selected: " + str(len(bpy.context.view_layer.objects.selected) - 1) + " items")
+				box.label(text="Selected: " + str(len(bpy.context.view_layer.objects.selected)) + " items")
 			else:
 				box.label(text="Error: active object must be a mesh")
 			layout.use_property_decorate = False  # No animation
