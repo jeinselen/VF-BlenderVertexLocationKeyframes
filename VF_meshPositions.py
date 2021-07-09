@@ -1,7 +1,7 @@
 bl_info = {
 	"name": "VF Mesh Positions",
 	"author": "John Einselen - Vectorform LLC",
-	"version": (0, 4),
+	"version": (0, 5),
 	"blender": (2, 80, 0),
 	"location": "Scene > Vertex Tools > Subpanel",
 	"description": "Sets a series of object position keyframes based on the vertices of a target mesh",
@@ -50,13 +50,12 @@ class VF_Mesh_Position_Offset(bpy.types.Operator):
 		for i in range(len(bpy.context.view_layer.objects.selected)):
 			if bpy.context.view_layer.objects.selected[i].name != bpy.context.view_layer.objects.active.name:
 				targets.append(bpy.context.view_layer.objects.selected[i])
-
 		length = min(len(source), len(targets))
 
-		# Randomise the order of the object attachments
-		attach = [*range(length)]
-		if bpy.context.scene.vf_mesh_positions_settings.shuffle_attachment:
-			random.shuffle(attach)
+		# Randomise the order of the object associations
+		assoc = [*range(length)]
+		if bpy.context.scene.vf_mesh_positions_settings.shuffle_association:
+			random.shuffle(assoc)
 
 		# Randomise the order of the object timing offsets
 		timing = [*range(length)]
@@ -67,8 +66,17 @@ class VF_Mesh_Position_Offset(bpy.types.Operator):
 		for i in range(length):
 			offsetFrame = startFrame + (timing[i] * bpy.context.scene.vf_mesh_positions_settings.keyframe_offset)
 			co_transformed = objWorld @ source[i].co
-			targets[attach[i]].location = co_transformed
-			targets[attach[i]].keyframe_insert(data_path="location", frame=offsetFrame)
+			# targets[assoc[i]].location = co_transformed
+			# targets[assoc[i]].keyframe_insert(data_path="location", frame=offsetFrame)
+			if bpy.context.scene.vf_mesh_positions_settings.location_x:
+				targets[assoc[i]].location[0] = co_transformed[0]
+				targets[assoc[i]].keyframe_insert(data_path="location", index = 0, frame=offsetFrame)
+			if bpy.context.scene.vf_mesh_positions_settings.location_y:
+				targets[assoc[i]].location[1] = co_transformed[1]
+				targets[assoc[i]].keyframe_insert(data_path="location", index = 1, frame=offsetFrame)
+			if bpy.context.scene.vf_mesh_positions_settings.location_z:
+				targets[assoc[i]].location[2] = co_transformed[2]
+				targets[assoc[i]].keyframe_insert(data_path="location", index = 2, frame=offsetFrame)
 
 		return {'FINISHED'}
 
@@ -76,17 +84,25 @@ class VF_Mesh_Position_Offset(bpy.types.Operator):
 # Project settings and UI rendering classes
 
 class VFMeshPositionsSettings(bpy.types.PropertyGroup):
-	enable_shuffle: bpy.props.BoolProperty(
-		name="Shuffle",
-		description="Enable/disable randomisation of the order vertex positions are applied to the target objects (if disabled, Blender's default alpha-numeric sorting is used)",
-		default=False)
-	shuffle_attachment: bpy.props.BoolProperty(
-		name="Shuffle Attachment",
+	location_x: bpy.props.BoolProperty(
+		name="Location X",
+		description="Enable/disable keyframing for the X location channel",
+		default=True)
+	location_y: bpy.props.BoolProperty(
+		name="Location Y",
+		description="Enable/disable keyframing for the Y location channel",
+		default=True)
+	location_z: bpy.props.BoolProperty(
+		name="Location Z",
+		description="Enable/disable keyframing for the Z location channel",
+		default=True)
+	shuffle_association: bpy.props.BoolProperty(
+		name="Shuffle association",
 		description="Enable/disable randomisation of the order vertex positions are applied to the target objects (if disabled, items and vertices are sorted by creation order)",
 		default=False)
 	shuffle_timing: bpy.props.BoolProperty(
 		name="Shuffle Timing",
-		description="Enable/disable randomisation of which items move first (this maintains the attachment order of vertices and objects, but randomises the order of the time offsets)",
+		description="Enable/disable randomisation of which items move first (this maintains the association order of vertices and objects, but randomises the order of the time offsets)",
 		default=False)
 	keyframe_offset: bpy.props.IntProperty(
 		name="Frame Offset",
@@ -115,19 +131,30 @@ class VFTOOLS_PT_mesh_positions(bpy.types.Panel):
 		try:
 			layout = self.layout
 			layout.use_property_decorate = False  # No animation
-			row = layout.row()
+			# row = layout.row()
 			# row.prop(context.scene.vf_mesh_positions_settings, 'enable_shuffle')
 			# row.prop(context.scene.vf_mesh_positions_settings, 'keyframe_offset')
-			row.prop(context.scene.vf_mesh_positions_settings, 'shuffle_attachment')
-			row.prop(context.scene.vf_mesh_positions_settings, 'shuffle_timing')
+			row1 = layout.row()
+			row1.prop(context.scene.vf_mesh_positions_settings, 'location_x')
+			row1.prop(context.scene.vf_mesh_positions_settings, 'location_y')
+			row1.prop(context.scene.vf_mesh_positions_settings, 'location_z')
+			row2 = layout.row()
+			row2.prop(context.scene.vf_mesh_positions_settings, 'shuffle_association')
+			row2.prop(context.scene.vf_mesh_positions_settings, 'shuffle_timing')
 			layout.prop(context.scene.vf_mesh_positions_settings, 'keyframe_offset')
-			layout.operator(VF_Mesh_Position_Offset.bl_idname)
 			box = layout.box()
-			if bpy.context.view_layer.objects.active.type == "MESH":
-				box.label(text="Source: " + bpy.context.view_layer.objects.active.name + ", " + str(len(bpy.context.view_layer.objects.active.data.vertices)) + " points")
-				box.label(text="Selected: " + str(len(bpy.context.view_layer.objects.selected)) + " items")
+			if bpy.context.view_layer.objects.active and bpy.context.view_layer.objects.active.type == "MESH":
+				if len(bpy.context.view_layer.objects.selected) > 1:
+					layout.operator(VF_Mesh_Position_Offset.bl_idname)
+					box.label(text=str(len(bpy.context.view_layer.objects.active.data.vertices)) + " vertices in source \"" + bpy.context.view_layer.objects.active.name + "\"")
+					if bpy.context.view_layer.objects.active.select_get():
+						box.label(text=str(len(bpy.context.view_layer.objects.selected) - 1) + " selected target items")
+					else:
+						box.label(text=str(len(bpy.context.view_layer.objects.selected)) + " selected target items")
+				else:
+					box.label(text="Select both source and target objects")
 			else:
-				box.label(text="Error: active object must be a mesh")
+				box.label(text="Active object must be a mesh")
 		except Exception as exc:
 			print(str(exc) + " | Error in VF Mesh Positions panel")
 
