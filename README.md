@@ -6,13 +6,14 @@ Creates location keyframes for selected items based on vertices from a source me
 
 
 
-## Usage
+## Installation and Usage
 
+- Download, install, and activate [VF_vertexLocationKeyframes.py](https://raw.githubusercontent.com/jeinselenVF/VF-BlenderVertexLocationKeyframes/main/VF_vertexLocationKeyframes.py)
 - In object mode, select the target items
   - These can be items of any type, including empties, meshes, and lights
 - Set the source mesh as the active object
   - This _must_ be a mesh object containing one or more vertices
-  - The number of selected objects and the number of source mesh vertices should typically match, but the addon will always work with the smaller of the two numbers
+  - The number of selected objects and the number of source mesh vertices should typically match, but the add-on will always work with the smaller of the two numbers
 - Customise settings as needed, including frame offset
   - See the list of settings below for more details
 - Navigate to the point in the timeline where you want the keyframes to start
@@ -21,7 +22,7 @@ Creates location keyframes for selected items based on vertices from a source me
 
 If the order of the vertices isn't working for you, try re-sorting them using one of the available commands (while in edit mode) found in the `Mesh > Sort Elements` menu.
 
-![screenshot of the addon interface in Blender](images/screenshot.png)
+![screenshot of the add-on interface in Blender](images/screenshot.png)
 
 
 
@@ -74,7 +75,7 @@ This can give a feeling of randomisation while still maintaining the reliability
 
 ![four spheres animate between left and right sides with randomised target locations and physically simulated interactions](images/example5.gif)
 
-As demonstrated at the top, this is the intended purpose of the addon; to help simplify a slightly complicated workflow. Though animating a source mesh using mesh keys while attaching target items with vertex groups works, it doesn't support sequential vertex delays and randomisation. This addon is a plausible solution when forming shape arrays out of physically simulated objects.
+As demonstrated at the top, this is the intended purpose of the add-on; to help simplify a slightly complicated workflow. Though animating a source mesh using mesh keys while attaching target items with vertex groups works, it doesn't support sequential vertex delays and randomisation. This add-on is a plausible solution when forming shape arrays out of physically simulated objects.
 
 In this case, the target items are passive rigid body objects with animation enabled, and the rendered objects are active rigid bodies, with each pair attached using spring constraints. Download the demo file to try it out for yourself.
 

@@ -1,14 +1,14 @@
 bl_info = {
 	"name": "VF Vertex Location Keyframes",
 	"author": "John Einselen - Vectorform LLC",
-	"version": (0, 6),
+	"version": (0, 6, 1),
 	"blender": (2, 80, 0),
 	"location": "Scene > VF Tools > Vertex Location Keyframes",
 	"description": "Create location keyframes for selected items based on vertices from a source mesh",
 	"warning": "inexperienced developer, use at your own risk",
 	"wiki_url": "",
 	"tracker_url": "",
-	"category": "Render"}
+	"category": "3D View"}
 
 # Based on the following resources:
 # https://blender.stackexchange.com/questions/1311/how-can-i-get-vertex-positions-from-a-mesh
@@ -129,7 +129,7 @@ class VFTOOLS_PT_vertex_location_keyframes(bpy.types.Panel):
 	def draw(self, context):
 		try:
 			layout = self.layout
-			layout.use_property_decorate = False  # No animation
+			layout.use_property_decorate = False # No animation
 
 			row1 = layout.row()
 			row1.prop(context.scene.vf_vertex_location_keyframes_settings, 'location_x')
