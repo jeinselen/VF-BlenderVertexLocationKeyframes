@@ -1,7 +1,7 @@
 bl_info = {
 	"name": "VF Vertex Location Keyframes",
 	"author": "John Einselen - Vectorform LLC",
-	"version": (0, 6, 1),
+	"version": (0, 6, 2),
 	"blender": (2, 80, 0),
 	"location": "Scene > VF Tools > Vertex Location Keyframes",
 	"description": "Create location keyframes for selected items based on vertices from a source mesh",
@@ -112,7 +112,8 @@ class VFTOOLS_PT_vertex_location_keyframes(bpy.types.Panel):
 	bl_space_type = "VIEW_3D"
 	bl_region_type = "UI"
 	bl_category = 'VF Tools'
-	bl_order = 0
+	bl_order = 2
+	bl_options = {'DEFAULT_CLOSED'}
 	bl_label = "Vertex Location Keyframes"
 	bl_idname = "VFTOOLS_PT_vertex_location_keyframes"
 
