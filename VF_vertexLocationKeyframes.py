@@ -2,12 +2,12 @@ bl_info = {
 	"name": "VF Vertex Location Keyframes",
 	"author": "John Einselen - Vectorform LLC",
 	"version": (0, 6, 2),
-	"blender": (2, 80, 0),
+	"blender": (2, 83, 0),
 	"location": "Scene > VF Tools > Vertex Location Keyframes",
 	"description": "Create location keyframes for selected items based on vertices from a source mesh",
 	"warning": "inexperienced developer, use at your own risk",
-	"wiki_url": "",
-	"tracker_url": "",
+	"doc_url": "https://github.com/jeinselenVF/VF-BlenderVertexLocationKeyframes",
+	"tracker_url": "https://github.com/jeinselenVF/VF-BlenderVertexLocationKeyframes/issues",
 	"category": "3D View"}
 
 # Based on the following resources:
