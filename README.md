@@ -1,3 +1,6 @@
+> [!NOTE]
+> This add-on for earlier Blender versions has been migrated to the [Production Kit extension](https://github.com/jeinselen/Blender-ProductionKit) for Blender 4.2+
+
 # VF Vertex Location Keyframes
 
 Creates location keyframes for selected items based on vertices from a source mesh.
